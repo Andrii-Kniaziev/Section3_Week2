@@ -37,23 +37,53 @@ object ParallelParenthesesBalancing extends ParallelParenthesesBalancingInterfac
 
   /** Returns `true` iff the parentheses in the input `chars` are balanced.
    */
-  def balance(chars: Array[Char]): Boolean =
-    ???
+  def balance(chars: Array[Char]): Boolean = {
+    def check(chrs: Array[Char], balance: Int): Boolean =
+      if (balance < 0) false
+      else if (chrs.isEmpty) balance == 0
+      else if (chrs.head == '(') check(chrs.tail, balance + 1)
+      else if (chrs.head == ')') check(chrs.tail, balance - 1)
+      else check(chrs.tail, balance)
+
+    check(chars, 0)
+  }
+
+
 
   /** Returns `true` iff the parentheses in the input `chars` are balanced.
    */
-  def parBalance(chars: Array[Char], threshold: Int): Boolean =
+  def parBalance(chars: Array[Char], threshold: Int): Boolean = {
 
-    def traverse(idx: Int, until: Int, arg1: Int, arg2: Int) /*: ???*/ = {
-      ???
+    def traverse(idx: Int, until: Int, arg1: Int, arg2: Int): (Int, Int) = {
+      var waitClosing = false
+      var res = (arg1, arg2)
+      def accumul(char: Char, acc: (Int, Int)): (Int, Int) = {
+        if(char == '(')
+          waitClosing = true
+          (acc._1 + 1, acc._2)
+        else if(waitClosing && char == ')') (acc._1 - 1, acc._2)
+        else if(char == ')') (acc._1, acc._2 + 1)
+        else acc
+      }
+
+      for(i <- idx until until)
+        res = accumul(chars(i), res)
+
+      res
     }
 
-    def reduce(from: Int, until: Int) /*: ???*/ = {
-      ???
+    def reduce(from: Int, until: Int): (Int, Int) = {
+      if(until - from <= threshold) traverse(from, until, 0, 0)
+      else {
+        val mid = from + (until - from) / 2
+        val (pair1, pair2) = parallel(reduce(from, mid), reduce(mid, until))
+
+        if(pair1._1 + pair2._2 >= pair1._2 + pair2._1) (pair1._1 + pair2._1, pair1._2 + pair2._2)
+        else (Int.MinValue, pair1._1)
+      }
     }
 
-    reduce(0, chars.length) == ???
-
-  // For those who want more:
-  // Prove that your reduction operator is associative!
-
+    val res = reduce(0, chars.length)
+    res._1 + res._2 == 0
+  }
+  
